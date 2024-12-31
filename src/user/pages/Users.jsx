@@ -1,18 +1,35 @@
-import UsersList from "../components/UsersList";
+import { useEffect, useState } from 'react';
+import UsersList from '../components/UsersList';
+import ErrorModal from '../../shared/components/UIElements/ErrorModal';
+import LoadingSpinner from '../../shared/components/UIElements/LoadingSpinner';
+import { useHttpClient } from '../../shared/hooks/http-hook';
 
 const Users = () => {
-    const USERS = [
-        {
-            id: '1',
-            name: 'Stevanus Billy',
-            image: 'https://www.shutterstock.com/image-vector/cute-panda-dabbing-pose-cartoon-260nw-2471990065.jpg',
-            places: 3
-        }
-    ];
+	const { isLoading, error, sendRequest, clearError } = useHttpClient();
+	const [loadedUsers, setLoadedUsers] = useState([]);
+	useEffect(() => {
+		const fetchUsers = async () => {
+			try {
+				const responseData = await sendRequest(
+					`${process.env.REACT_APP_BACKEND_URL}/users`
+				);
+				setLoadedUsers(responseData.users);
+			} catch (error) {}
+		};
+		fetchUsers();
+	}, [sendRequest]);
 
-    return (
-        <UsersList items={USERS} />
-    );
-}
+	return (
+		<>
+			<ErrorModal error={error} onClear={clearError} />
+			{isLoading && (
+				<div>
+					<LoadingSpinner asOverlay />
+				</div>
+			)}
+			<UsersList items={loadedUsers} />
+		</>
+	);
+};
 
 export default Users;

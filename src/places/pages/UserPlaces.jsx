@@ -1,39 +1,48 @@
-import React from "react";
-import PlaceList from "../components/PlaceList";
-import { useParams } from "react-router-dom";
+import React, { useEffect, useState } from 'react';
+import { useParams } from 'react-router-dom';
 
-const DUMMY_PLACES=[
-    {
-        id:'p1',
-        title:'Borobudur Temple',
-        description: 'one of the funniest place',
-        imageUrl: 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcR2SYpibWv2Wwn-RQKiBsnLBUCGrw7jXw3kHA&s',
-        address: 'Jl. Badrawati, Kw. Candi Borobudur, Borobudur, Kec. Borobudur, Kabupaten Magelang, Jawa Tengah',
-        location: {
-            lat: -7.6078738,
-            lng: 110.2011764
-        },
-        creator: 'u1'
-    },
-    {
-        id:'p2',
-        title:'Borobudur Temple',
-        description: 'one of the funniest place',
-        imageUrl: 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcR2SYpibWv2Wwn-RQKiBsnLBUCGrw7jXw3kHA&s',
-        address: 'Jl. Badrawati, Kw. Candi Borobudur, Borobudur, Kec. Borobudur, Kabupaten Magelang, Jawa Tengah',
-        location: {
-            lat: -7.6078738,
-            lng: 110.2011764
-        },
-        creator: 'u2'
-    }
-]
+import PlaceList from '../components/PlaceList';
+import ErrorModal from '../../shared/components/UIElements/ErrorModal';
+import LoadingSpinner from '../../shared/components/UIElements/LoadingSpinner';
+import { useHttpClient } from '../../shared/hooks/http-hook';
 
 const UserPlaces = () => {
-    const userId = useParams().userId;
-    const loadedPlaces = DUMMY_PLACES.filter(place => place.creator === userId)
+	const [loadedPlaces, setLoadedPlaces] = useState();
+	const { isLoading, error, sendRequest, clearError } = useHttpClient();
 
-    return <PlaceList items={loadedPlaces}/>;
-}
+	const userId = useParams().userId;
+
+	useEffect(() => {
+		const fetchPlaces = async () => {
+			try {
+				const responseData = await sendRequest(
+					`${process.env.REACT_APP_BACKEND_URL}/places/user/${userId}`
+				);
+				setLoadedPlaces(responseData.places);
+			} catch (err) {}
+		};
+		fetchPlaces();
+	}, [sendRequest, userId]);
+
+	const placeDeleteHandler = (deletedPlaceId) => {
+		setLoadedPlaces((prevPlaces) =>
+			prevPlaces.filter((place) => place.id !== deletedPlaceId)
+		);
+	};
+
+	return (
+		<>
+			<ErrorModal error={error} onClear={clearError} />
+			{isLoading && (
+				<div className='center'>
+					<LoadingSpinner />
+				</div>
+			)}
+			{!isLoading && loadedPlaces && (
+				<PlaceList items={loadedPlaces} onDeletePlace={placeDeleteHandler} />
+			)}
+		</>
+	);
+};
 
 export default UserPlaces;
